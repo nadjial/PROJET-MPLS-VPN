@@ -1,0 +1,178 @@
+PE1#SH RUN
+Building configuration...
+
+Current configuration : 2480 bytes
+!
+version 12.4
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname PE1
+!
+boot-start-marker
+boot-end-marker
+!
+!
+no aaa new-model
+memory-size iomem 5
+no ip icmp rate-limit unreachable
+ip cef
+!
+!
+!
+!
+ip vrf HQBOL
+ rd 1:100
+ route-target export 1:100
+ route-target import 1:100
+!
+ip vrf HQBONGOR
+ rd 3:300
+ route-target export 3:300
+ route-target import 3:300
+!
+ip vrf HQNDJAM
+ rd 2:200
+ route-target export 2:200
+ route-target import 2:200
+!
+no ip domain lookup
+ip auth-proxy max-nodata-conns 3
+ip admission max-nodata-conns 3
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+ip tcp synwait-time 5
+!
+!
+!
+!
+!
+interface Loopback0
+ ip address 5.5.5.5 255.255.255.0
+!
+interface FastEthernet0/0
+ ip address 192.168.1.18 255.255.255.252
+ duplex auto
+ speed auto
+ mpls ip
+!
+interface FastEthernet0/1
+ ip vrf forwarding HQBOL
+ ip address 192.172.10.1 255.255.255.0
+ duplex auto
+ speed auto
+!
+interface FastEthernet1/0
+ ip vrf forwarding HQNDJAM
+ ip address 192.172.20.1 255.255.255.0
+ duplex auto
+ speed auto
+!
+interface FastEthernet2/0
+ ip vrf forwarding HQBONGOR
+ ip address 192.172.30.1 255.255.255.0
+ duplex auto
+ speed auto
+!
+router eigrp 30
+ no auto-summary
+ !
+ address-family ipv4 vrf HQBONGOR
+  redistribute bgp 1 metric 1 1 1 1 1
+  network 192.172.30.0
+  auto-summary
+  autonomous-system 30
+ exit-address-family
+!
+router ospf 1
+ log-adjacency-changes
+ network 5.5.5.0 0.0.0.255 area 0
+ network 192.168.1.16 0.0.0.3 area 0
+!
+router rip
+ version 2
+ !
+ address-family ipv4 vrf HQBOL
+  redistribute bgp 1 metric transparent
+  network 192.172.10.0
+  no auto-summary
+ exit-address-family
+!
+router bgp 1
+ no synchronization
+ bgp log-neighbor-changes
+ redistribute eigrp 30
+ neighbor 6.6.6.6 remote-as 1
+ neighbor 6.6.6.6 update-source Loopback0
+ no auto-summary
+ !
+ address-family vpnv4
+  neighbor 6.6.6.6 activate
+  neighbor 6.6.6.6 send-community both
+ exit-address-family
+ !
+ address-family ipv4 vrf HQNDJAM
+  no synchronization
+ exit-address-family
+ !
+ address-family ipv4 vrf HQBONGOR
+  no synchronization
+ exit-address-family
+ !
+ address-family ipv4 vrf HQBOL
+  redistribute rip
+  no synchronization
+ exit-address-family
+!
+ip forward-protocol nd
+!
+!
+no ip http server
+no ip http secure-server
+!
+no cdp log mismatch duplex
+!
+!
+!
+control-plane
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+line con 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+line aux 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+line vty 0 4
+ login
+!
+!
+end
+
+PE1#
